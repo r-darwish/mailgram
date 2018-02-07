@@ -19,8 +19,10 @@ private:
     {
         acceptor.async_accept(socket, [this](boost::system::error_code ec) {
             if (!ec) {
-                auto session = std::make_unique<Session>(std::move(socket));
-                session->start(std::move(session));
+                std::cout << "Connection\n";
+                (new Session(std::move(socket)))->start();
+            } else {
+                std::cout << "Error" << ec << "\n";
             }
 
             do_accept();

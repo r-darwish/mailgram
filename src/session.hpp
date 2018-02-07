@@ -7,30 +7,53 @@ namespace mailgram {
 
 class Session {
 public:
-    Session(boost::asio::ip::tcp::socket && socket) : socket(std::move(socket)) {}
+    Session(boost::asio::ip::tcp::socket socket) : socket(std::move(socket)) {}
 
-    void start(std::unique_ptr<Session> && self) { read_line(std::move(self)); }
+    void start()
+    {
+        write_line("220 mailgram -- Server ESMTP (MSG)\r\n");
+        read_line();
+    }
 
 private:
-    void read_line(std::unique_ptr<Session> && self)
+    void write_line(const std::string line)
     {
-        auto line_handler = [this, self = std::move(self)](boost::system::error_code ec, std::size_t)
-        {
+        boost::asio::async_write(socket, boost::asio::buffer(line),
+                                 [line = std::move(line)](boost::system::error_code ec, std::size_t /*length*/){});
+    }
+
+    void write_ok() { write_line("250 OK\r\n"); }
+
+    void write_error() { write_line("500 Error\r\n"); }
+
+    void read_line()
+    {
+        auto line_handler = [this](boost::system::error_code ec, std::size_t size) {
             if (!ec) {
                 std::istream is(&data);
-                is.unsetf(std::ios_base::skipws);
                 std::string line;
-                is >> line;
-                std::cout << line << '\n';
-                //read_line(std::move(self));
+                std::getline(is, line);
+                if (handle_line(line)) {
+                    read_line();
+                    return;
+                }
             }
+            delete this;
         };
 
         boost::asio::async_read_until(socket, data, "\r\n", std::move(line_handler));
     }
 
+    bool handle_line(const std::string & line);
+
 private:
+    enum class State { Connected, HelloSent, Data, BodyReceived };
+    State state = State::Connected;
+    std::string from;
+    std::string to;
+    std::string body;
     boost::asio::streambuf data;
     boost::asio::ip::tcp::socket socket;
 };
+
 } // namespace mailgram
