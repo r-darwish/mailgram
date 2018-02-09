@@ -1,31 +1,13 @@
 #include "session.hpp"
+#include "text.hpp"
 #include <optional>
 
 namespace mailgram {
 
-inline std::optional<std::string> extract_address(const std::string & text)
-{
-    const auto left_bracket = text.find('<');
-    const auto right_bracket = text.find('>');
-
-    if ((left_bracket == -1) or (right_bracket == -1)) {
-        return {};
-    }
-
-    return {text.substr(left_bracket + 1, right_bracket - left_bracket - 1)};
-}
-
 bool Session::handle_line(const std::string & line)
 {
-    std::istringstream is{line};
-
-    const auto extract_word = [&]() {
-        std::string word;
-        is >> word;
-        return std::move(word);
-    };
-
-    const auto command = extract_word();
+    WordExtractor word_extractor(line);
+    const auto command = word_extractor.next_word();
 
     switch (state) {
     case State::Connected:
@@ -40,8 +22,8 @@ bool Session::handle_line(const std::string & line)
 
     case State::HelloSent:
         if (command == "MAIL") {
-            if (const auto from_opt = extract_address(extract_word()); from_opt) {
-                from = *from_opt;
+            if (const auto address = extract_address(word_extractor.next_word()); not address.empty()) {
+                from = address;
             } else {
                 std::cout << "Bad formatting: " << line << '\n';
                 return false;
@@ -50,8 +32,8 @@ bool Session::handle_line(const std::string & line)
             std::cout << "Mail from: " << from << '\n';
             write_ok();
         } else if (command == "RCPT") {
-            if (const auto to_opt = extract_address(extract_word()); to_opt) {
-                to = *to_opt;
+            if (const auto address = extract_address(word_extractor.next_word()); not address.empty()) {
+                to = address;
             } else {
                 std::cout << "Bad formatting: " << line << '\n';
                 return false;
@@ -72,7 +54,6 @@ bool Session::handle_line(const std::string & line)
 
     case State::Data:
         if (line[0] == '.') {
-            std::cout << "Body Receivied:\n";
             std::cout << body << '\n';
             write_ok();
             state = State::BodyReceived;
@@ -89,6 +70,8 @@ bool Session::handle_line(const std::string & line)
     default:
         std::abort();
     }
+
+    return true;
 }
 
 } // namespace mailgram

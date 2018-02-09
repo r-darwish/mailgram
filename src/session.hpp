@@ -18,8 +18,9 @@ public:
 private:
     void write_line(const std::string line)
     {
-        boost::asio::async_write(socket, boost::asio::buffer(line),
-                                 [line = std::move(line)](boost::system::error_code ec, std::size_t /*length*/){});
+        boost::asio::async_write(
+            socket, boost::asio::buffer(line),
+            [line = std::move(line)](boost::system::error_code /* ec */, std::size_t /* length */){});
     }
 
     void write_ok() { write_line("250 OK\r\n"); }
@@ -28,7 +29,7 @@ private:
 
     void read_line()
     {
-        auto line_handler = [this](boost::system::error_code ec, std::size_t size) {
+        auto line_handler = [this](boost::system::error_code ec, std::size_t /* size */) {
             if (!ec) {
                 std::istream is(&data);
                 std::string line;
@@ -36,6 +37,8 @@ private:
                 if (handle_line(line)) {
                     read_line();
                     return;
+                } else {
+                    std::cout << "Disconnection\n";
                 }
             }
             delete this;
