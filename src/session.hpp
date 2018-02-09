@@ -32,9 +32,17 @@ private:
     {
         auto line_handler = [this](boost::system::error_code ec, std::size_t /* size */) {
             if (!ec) {
-                std::istream is(&data);
-                std::string line;
-                std::getline(is, line);
+                const auto line = [&] {
+                    std::string line;
+                    std::istream is(&data);
+                    std::getline(is, line);
+                    const auto last_char = line.size() - 1;
+                    if (line[last_char] == '\r') {
+                        line.erase(last_char, 1);
+                    }
+                    return std::move(line);
+                }();
+
                 if (handle_line(line)) {
                     read_line();
                     return;
@@ -57,7 +65,7 @@ private:
     State state = State::Connected;
     std::string from;
     std::string to;
-    std::string body;
+    std::ostringstream body;
     boost::asio::streambuf data;
     boost::asio::ip::tcp::socket socket;
 };

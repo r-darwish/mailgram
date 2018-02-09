@@ -67,12 +67,11 @@ bool Session::handle_line(const std::string & line)
 
     case State::Data:
         if (line[0] == '.') {
-            std::cout << body << '\n';
+            std::cout << body.str();
             write_ok();
             state = State::BodyReceived;
         } else {
-            body += line.substr(0, line.size() - 1);
-            body += '\n';
+            body << line << '\n';
         }
         return true;
 
