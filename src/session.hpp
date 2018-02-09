@@ -1,4 +1,5 @@
 #pragma once
+#include "text.hpp"
 #include <boost/asio.hpp>
 #include <iostream>
 #include <string>
@@ -47,6 +48,8 @@ private:
         boost::asio::async_read_until(socket, data, "\r\n", std::move(line_handler));
     }
 
+    bool handle_command(const std::string & line, const std::string_view & command,
+                        WordExtractor & word_extractor);
     bool handle_line(const std::string & line);
 
 private:

@@ -4,6 +4,48 @@
 
 namespace mailgram {
 
+bool Session::handle_command(const std::string & line, const std::string_view & command,
+                             WordExtractor & word_extractor)
+{
+    if (command == "MAIL") {
+        if (const auto address = extract_address(word_extractor.next_word()); not address.empty()) {
+            from = address;
+        } else {
+            std::cout << "Bad formatting: " << line << '\n';
+            return false;
+        }
+
+        std::cout << "Mail from: " << from << '\n';
+        write_ok();
+        return true;
+
+    } else if (command == "RCPT") {
+        if (const auto address = extract_address(word_extractor.next_word()); not address.empty()) {
+            to = address;
+        } else {
+            std::cout << "Bad formatting: " << line << '\n';
+            return false;
+        }
+
+        std::cout << "Mail to: " << to << '\n';
+        write_ok();
+        return true;
+
+    } else if (command == "DATA") {
+        std::cout << "Receiving body\n";
+        state = State::Data;
+        write_ok();
+        return true;
+
+    } else {
+        std::cout << "Unknown command: " << line << '\n';
+        write_error();
+        return false;
+    }
+
+    std::abort();
+}
+
 bool Session::handle_line(const std::string & line)
 {
     WordExtractor word_extractor(line);
@@ -18,39 +60,10 @@ bool Session::handle_line(const std::string & line)
 
         write_ok();
         state = State::HelloSent;
-        break;
+        return true;
 
     case State::HelloSent:
-        if (command == "MAIL") {
-            if (const auto address = extract_address(word_extractor.next_word()); not address.empty()) {
-                from = address;
-            } else {
-                std::cout << "Bad formatting: " << line << '\n';
-                return false;
-            }
-
-            std::cout << "Mail from: " << from << '\n';
-            write_ok();
-        } else if (command == "RCPT") {
-            if (const auto address = extract_address(word_extractor.next_word()); not address.empty()) {
-                to = address;
-            } else {
-                std::cout << "Bad formatting: " << line << '\n';
-                return false;
-            }
-
-            std::cout << "Mail to: " << to << '\n';
-            write_ok();
-        } else if (command == "DATA") {
-            std::cout << "Receiving body\n";
-            state = State::Data;
-            write_ok();
-        } else {
-            std::cout << "Unknown command: " << line << '\n';
-            write_error();
-            return false;
-        }
-        break;
+        return handle_command(line, command, word_extractor);
 
     case State::Data:
         if (line[0] == '.') {
@@ -61,7 +74,7 @@ bool Session::handle_line(const std::string & line)
             body += line.substr(0, line.size() - 1);
             body += '\n';
         }
-        break;
+        return true;
 
     case State::BodyReceived:
         write_ok();
@@ -71,7 +84,7 @@ bool Session::handle_line(const std::string & line)
         std::abort();
     }
 
-    return true;
+    std::abort();
 }
 
 } // namespace mailgram
