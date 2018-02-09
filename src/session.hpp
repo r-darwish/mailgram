@@ -61,7 +61,7 @@ private:
     bool handle_line(const std::string & line);
 
 private:
-    enum class State { Connected, HelloSent, Data, BodyReceived };
+    enum class State { Connected, Negotiated, Data, BodyReceived };
     State state = State::Connected;
     std::string from;
     std::string to;

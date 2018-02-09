@@ -59,10 +59,10 @@ bool Session::handle_line(const std::string & line)
         }
 
         write_ok();
-        state = State::HelloSent;
+        state = State::Negotiated;
         return true;
 
-    case State::HelloSent:
+    case State::Negotiated:
         return handle_command(line, command, word_extractor);
 
     case State::Data:
