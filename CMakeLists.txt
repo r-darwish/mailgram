@@ -5,7 +5,7 @@ project(Mailgram)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(!MSVC)
+if(NOT MSVC)
     set(COMPILE_OPTIONS
       -Wall
       -Wextra
