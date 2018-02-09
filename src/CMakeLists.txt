@@ -1,4 +1,3 @@
-file(GLOB source_files *.cpp)
-add_executable(mailgram ${source_files})
+add_executable(mailgram main.cpp session.cpp)
 
 target_link_libraries(mailgram CONAN_PKG::boost_asio)
